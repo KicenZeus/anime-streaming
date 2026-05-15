@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getTopAnime, getCurrentSeasonAnime, getUpcomingAnime } from "@/services/animeService";
 import AnimeCard from "@/components/anime/AnimeCard";
@@ -13,7 +13,8 @@ const SORT_OPTIONS = [
   { label: "Upcoming", value: "upcoming" },
 ];
 
-export default function AnimePage() {
+// ✅ Pindahkan semua logic ke komponen terpisah
+function AnimeContent() {
   const searchParams = useSearchParams();
   const sortParam = searchParams.get("sort") || "top";
 
@@ -138,5 +139,20 @@ export default function AnimePage() {
         </>
       )}
     </main>
+  );
+}
+
+// ✅ Page utama hanya bungkus dengan Suspense
+export default function AnimePage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-black pt-24 pb-32 px-5 md:px-16">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array(20).fill(0).map((_, i) => <AnimeCardSkeleton key={i} />)}
+        </div>
+      </main>
+    }>
+      <AnimeContent />
+    </Suspense>
   );
 }
