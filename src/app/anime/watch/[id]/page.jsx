@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { ChevronLeft, AlertCircle } from "lucide-react";
 import { getAnimeById } from "@/services/animeService";
@@ -8,7 +8,7 @@ import { getAnimeImage } from "@/lib/utils";
 import VideoPlayer from "@/components/player/VideoPlayer";
 import EpisodeSidebar from "@/components/player/EpisodeSidebar";
 
-export default function WatchPage() {
+function WatchContent() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -20,9 +20,8 @@ export default function WatchPage() {
     epParam ? Number(epParam) : 1
   );
 
-  // Stream state
   const [streamUrl, setStreamUrl] = useState(null);
-  const [streamType, setStreamType] = useState("none"); // youtube | hls | mp4 | none
+  const [streamType, setStreamType] = useState("none");
 
   useEffect(() => {
     if (!id) return;
@@ -36,18 +35,14 @@ export default function WatchPage() {
 
         setAnime(data);
 
-        // SELALU pakai YouTube kalau ada trailer
-        // Hindari MP4 sample karena CORS issue
         if (data.trailer?.youtube_id) {
           setStreamUrl(
             "https://www.youtube.com/embed/" +
               data.trailer.youtube_id +
               "?autoplay=1&rel=0&modestbranding=1"
           );
-
           setStreamType("youtube");
         } else {
-          // Tidak ada trailer
           setStreamUrl(null);
           setStreamType("none");
         }
@@ -61,15 +56,9 @@ export default function WatchPage() {
     fetch();
   }, [id]);
 
-  // Ganti episode
   const handleEpisodeChange = (epNum) => {
     setSelectedEp(epNum);
-
-    window.history.pushState(
-      {},
-      "",
-      "/anime/watch/" + id + "?ep=" + epNum
-    );
+    window.history.pushState({}, "", "/anime/watch/" + id + "?ep=" + epNum);
   };
 
   if (loading) return <WatchSkeleton />;
@@ -78,26 +67,14 @@ export default function WatchPage() {
     return (
       <main className="min-h-screen bg-black pt-24 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle
-            size={48}
-            className="mx-auto mb-4"
-            style={{ color: "#e50914" }}
-          />
-
-          <h2
-            className="text-xl font-semibold mb-2"
-            style={{ color: "#ffdad5" }}
-          >
+          <AlertCircle size={48} className="mx-auto mb-4" style={{ color: "#e50914" }} />
+          <h2 className="text-xl font-semibold mb-2" style={{ color: "#ffdad5" }}>
             Anime Not Found
           </h2>
-
           <button
             onClick={() => router.push("/")}
             className="mt-4 px-4 py-2 rounded-lg text-sm font-medium"
-            style={{
-              background: "#e50914",
-              color: "white",
-            }}
+            style={{ background: "#e50914", color: "white" }}
           >
             Back Home
           </button>
@@ -125,13 +102,9 @@ export default function WatchPage() {
         </button>
 
         <div className="flex-1 min-w-0">
-          <p
-            className="text-sm font-semibold truncate"
-            style={{ color: "#ffdad5" }}
-          >
+          <p className="text-sm font-semibold truncate" style={{ color: "#ffdad5" }}>
             {anime.title_english || anime.title}
           </p>
-
           <p className="text-xs" style={{ color: "#af8782" }}>
             Episode {selectedEp}
           </p>
@@ -139,13 +112,9 @@ export default function WatchPage() {
       </div>
 
       {/* Main Layout */}
-      <div
-        className="flex flex-col lg:flex-row"
-        style={{ minHeight: "calc(100vh - 112px)" }}
-      >
+      <div className="flex flex-col lg:flex-row" style={{ minHeight: "calc(100vh - 112px)" }}>
         {/* Player Area */}
         <div className="flex-1">
-          {/* Video Player */}
           {streamUrl ? (
             <VideoPlayer
               streamUrl={streamUrl}
@@ -157,30 +126,14 @@ export default function WatchPage() {
           ) : (
             <div
               className="w-full flex items-center justify-center"
-              style={{
-                aspectRatio: "16/9",
-                background:
-                  "linear-gradient(to bottom right, #111, #1a1a1a)",
-              }}
+              style={{ aspectRatio: "16/9", background: "linear-gradient(to bottom right, #111, #1a1a1a)" }}
             >
               <div className="text-center px-6">
-                <AlertCircle
-                  size={52}
-                  className="mx-auto mb-4"
-                  style={{ color: "#e50914" }}
-                />
-
-                <h2
-                  className="text-xl font-semibold mb-2"
-                  style={{ color: "#ffdad5" }}
-                >
+                <AlertCircle size={52} className="mx-auto mb-4" style={{ color: "#e50914" }} />
+                <h2 className="text-xl font-semibold mb-2" style={{ color: "#ffdad5" }}>
                   Trailer Not Available
                 </h2>
-
-                <p
-                  className="text-sm max-w-md"
-                  style={{ color: "#af8782" }}
-                >
+                <p className="text-sm max-w-md" style={{ color: "#af8782" }}>
                   Anime ini belum memiliki trailer YouTube yang tersedia.
                 </p>
               </div>
@@ -189,19 +142,14 @@ export default function WatchPage() {
 
           {/* Anime Info */}
           <div className="p-4 md:p-6">
-            <h1
-              className="text-lg font-bold mb-1"
-              style={{ color: "#ffdad5" }}
-            >
+            <h1 className="text-lg font-bold mb-1" style={{ color: "#ffdad5" }}>
               {anime.title_english || anime.title}
             </h1>
-
             <p className="text-sm mb-4" style={{ color: "#af8782" }}>
               Episode {selectedEp}
               {anime.episodes ? " of " + anime.episodes : ""}
             </p>
 
-            {/* Genres */}
             <div className="flex flex-wrap gap-2 mb-4">
               {anime.genres?.slice(0, 4).map((g) => (
                 <span
@@ -218,11 +166,7 @@ export default function WatchPage() {
               ))}
             </div>
 
-            {/* Synopsis */}
-            <p
-              className="text-sm leading-relaxed"
-              style={{ color: "rgba(199,198,198,0.8)" }}
-            >
+            <p className="text-sm leading-relaxed" style={{ color: "rgba(199,198,198,0.8)" }}>
               {anime.synopsis?.slice(0, 300)}
               {anime.synopsis?.length > 300 ? "..." : ""}
             </p>
@@ -245,14 +189,15 @@ function WatchSkeleton() {
   return (
     <main className="min-h-screen bg-black pt-16">
       <div className="skeleton h-12 w-full" />
-
-      <div
-        className="skeleton w-full"
-        style={{
-          aspectRatio: "16/9",
-          maxHeight: "70vh",
-        }}
-      />
+      <div className="skeleton w-full" style={{ aspectRatio: "16/9", maxHeight: "70vh" }} />
     </main>
+  );
+}
+
+export default function WatchPage() {
+  return (
+    <Suspense fallback={<WatchSkeleton />}>
+      <WatchContent />
+    </Suspense>
   );
 }
