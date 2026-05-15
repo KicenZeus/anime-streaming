@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { searchAnime, getAnimeByGenre } from "@/services/animeService";
@@ -8,7 +8,7 @@ import { POPULAR_GENRES } from "@/lib/constants";
 import AnimeCard from "@/components/anime/AnimeCard";
 import { AnimeCardSkeleton } from "@/components/anime/AnimeSkeleton";
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -21,7 +21,6 @@ export default function SearchPage() {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Fetch saat query berubah (dari URL)
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
@@ -44,12 +43,10 @@ export default function SearchPage() {
       }
     };
 
-    // Debounce 600ms
     const timer = setTimeout(fetchResults, 600);
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Fetch saat genre dipilih
   useEffect(() => {
     if (!selectedGenre) return;
 
@@ -94,12 +91,10 @@ export default function SearchPage() {
   return (
     <main className="min-h-screen bg-black pt-24 pb-32 px-5 md:px-16">
 
-      {/* Page Title */}
       <h1 className="text-2xl md:text-3xl font-bold mb-6" style={{ color: "#ffdad5" }}>
         Search Anime
       </h1>
 
-      {/* Search Bar */}
       <form onSubmit={handleSubmit} className="relative max-w-2xl mb-8">
         <div
           className="flex items-center gap-3 px-5 py-4 rounded-2xl border transition-all duration-300"
@@ -129,7 +124,6 @@ export default function SearchPage() {
         </div>
       </form>
 
-      {/* Genre Filter */}
       {!query && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -160,7 +154,6 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Results Header */}
       {hasSearched && !loading && (
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm" style={{ color: "#af8782" }}>
@@ -185,7 +178,6 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Loading State */}
       {loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {Array(12).fill(0).map((_, i) => (
@@ -194,7 +186,6 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Results Grid */}
       {!loading && results.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {results.map((anime, i) => (
@@ -203,7 +194,6 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Empty State */}
       {!loading && hasSearched && results.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <div
@@ -228,7 +218,6 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Initial State — belum search */}
       {!loading && !hasSearched && !selectedGenre && (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <p className="text-base" style={{ color: "#af8782" }}>
@@ -237,5 +226,19 @@ export default function SearchPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-black pt-24 pb-32 px-5 md:px-16">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array(12).fill(0).map((_, i) => <AnimeCardSkeleton key={i} />)}
+        </div>
+      </main>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }
