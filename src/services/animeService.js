@@ -1,4 +1,6 @@
 import { jikanApi } from "@/lib/axios";
+import axios from "axios";
+import { CONSUMET_BASE_URL } from "@/lib/constants";
 
 // ================================
 // ANIME SERVICE
@@ -112,4 +114,27 @@ export const getAnimeRecommendations = async () => {
     console.error("getAnimeRecommendations error:", error.message);
     throw error;
   }
+};
+
+const consumetApi = axios.create({
+  baseURL: CONSUMET_BASE_URL,
+  timeout: 15000,
+});
+
+// Search anime di Gogoanime via Consumet
+export const searchConsumet = async (query) => {
+  const res = await consumetApi.get("/anime/gogoanime/" + encodeURIComponent(query));
+  return res.data;
+};
+
+// Ambil info + episode list dari Gogoanime
+export const getConsumetInfo = async (animeId) => {
+  const res = await consumetApi.get("/anime/gogoanime/info/" + animeId);
+  return res.data;
+};
+
+// Ambil streaming URL untuk satu episode
+export const getStreamingUrl = async (episodeId) => {
+  const res = await consumetApi.get("/anime/gogoanime/watch/" + episodeId);
+  return res.data;
 };

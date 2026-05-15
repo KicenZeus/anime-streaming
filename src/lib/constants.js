@@ -17,6 +17,9 @@ export const JIKAN_BASE_URL = "https://api.jikan.moe/v4";
 export const BACKEND_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000/api";
 
+export const CONSUMET_BASE_URL =
+  process.env.NEXT_PUBLIC_CONSUMET_URL || "http://localhost:3001";
+
 // Jikan API rate limit: max 3 request per detik
 // Kalau lebih dari itu, API akan return error 429
 export const API_RATE_LIMIT_DELAY = 400; // milliseconds antar request
@@ -66,3 +69,4 @@ export const STORAGE_KEYS = {
   BOOKMARKS: "animex_bookmarks",
   THEME: "animex_theme",
 };
+
