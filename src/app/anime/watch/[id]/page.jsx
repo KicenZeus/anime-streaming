@@ -33,8 +33,6 @@ function WatchContent() {
         const result = await getAnimeById(id);
         const data = result.data;
 
-        console.log("Trailer data:", data.trailer);
-        console.log("YouTube ID:", data.trailer?.youtube_id);
 
           setAnime(data);
 
@@ -63,9 +61,6 @@ function WatchContent() {
             setStreamUrl(null);
             setStreamType("none");
           }
-
-          // Hapus console.log debug ini setelah berhasil
-          console.log("Stream URL:", streamUrl);
 
       } catch (err) {
         console.error("Failed fetch anime:", err);
