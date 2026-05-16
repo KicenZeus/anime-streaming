@@ -33,19 +33,40 @@ function WatchContent() {
         const result = await getAnimeById(id);
         const data = result.data;
 
-        setAnime(data);
+        console.log("Trailer data:", data.trailer);
+        console.log("YouTube ID:", data.trailer?.youtube_id);
 
-        if (data.trailer?.youtube_id) {
-          setStreamUrl(
-            "https://www.youtube.com/embed/" +
-              data.trailer.youtube_id +
-              "?autoplay=1&rel=0&modestbranding=1"
-          );
-          setStreamType("youtube");
-        } else {
-          setStreamUrl(null);
-          setStreamType("none");
-        }
+          setAnime(data);
+
+          // Cek youtube_id dulu, kalau null coba embed_url
+          const youtubeId = data.trailer?.youtube_id;
+          const embedUrl = data.trailer?.embed_url;
+
+          if (youtubeId) {
+            // Kalau ada youtube_id, build URL sendiri
+            setStreamUrl(
+              "https://www.youtube.com/embed/" +
+              youtubeId +
+              "?rel=0&modestbranding=1"
+            );
+            setStreamType("youtube");
+          } else if (embedUrl) {
+            // Kalau ada embed_url langsung dari Jikan, pakai itu
+            // Tapi bersihkan dulu parameter autoplay-nya
+            const cleanUrl = embedUrl
+              .replace("autoplay=1", "autoplay=0")
+              .replace("youtube-nocookie.com", "youtube.com");
+
+            setStreamUrl(cleanUrl);
+            setStreamType("youtube");
+          } else {
+            setStreamUrl(null);
+            setStreamType("none");
+          }
+
+          // Hapus console.log debug ini setelah berhasil
+          console.log("Stream URL:", streamUrl);
+
       } catch (err) {
         console.error("Failed fetch anime:", err);
       } finally {
