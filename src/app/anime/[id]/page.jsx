@@ -2,18 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Play, Plus, Star, Clock, Tv, ChevronLeft, ExternalLink } from "lucide-react";
+import { Play, Plus, Check, Star, Clock, Tv, ChevronLeft, ExternalLink } from "lucide-react";
 import { getAnimeById } from "@/services/animeService";
 import { getAnimeImage, formatScore, formatStatus } from "@/lib/utils";
 import RelatedAnime from "@/components/anime/RelatedAnime";
+import useBookmarkStore from "@/store/bookmarkStore";
 
 export default function AnimeDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { isBookmarked, toggleBookmark, initBookmarks } = useBookmarkStore();
+
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    initBookmarks();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -23,6 +31,7 @@ export default function AnimeDetailPage() {
         setError(null);
         const result = await getAnimeById(id);
         setAnime(result.data);
+        setBookmarked(isBookmarked(Number(id)));
       } catch (err) {
         setError("Failed to load anime details.");
         console.error(err);
@@ -33,6 +42,12 @@ export default function AnimeDetailPage() {
     fetchDetail();
   }, [id]);
 
+  const handleBookmark = () => {
+    if (!anime) return;
+    toggleBookmark(anime);
+    setBookmarked(!bookmarked);
+  };
+
   if (loading) return <DetailSkeleton />;
   if (error) return <ErrorState message={error} onBack={() => router.back()} />;
   if (!anime) return null;
@@ -41,6 +56,7 @@ export default function AnimeDetailPage() {
   const score = formatScore(anime.score);
   const status = formatStatus(anime.status);
   const trailerId = anime.trailer?.youtube_id;
+  const embedUrl = anime.trailer?.embed_url;
   const tabs = ["overview", "episodes", "related"];
 
   return (
@@ -66,6 +82,7 @@ export default function AnimeDetailPage() {
       <div className="relative z-10 -mt-32 px-5 md:px-16 max-w-screen-xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8">
 
+          {/* Poster */}
           <div className="flex-shrink-0">
             <div
               className="rounded-2xl overflow-hidden border shadow-2xl"
@@ -85,6 +102,7 @@ export default function AnimeDetailPage() {
             )}
           </div>
 
+          {/* Info */}
           <div className="flex-1 pt-32 md:pt-0 md:mt-8">
             <span
               className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-3"
@@ -108,7 +126,7 @@ export default function AnimeDetailPage() {
               <p className="text-sm mb-4" style={{ color: "#af8782" }}>{anime.title_japanese}</p>
             )}
 
-            <div className="flex flex-wrap gap-4 mb-5">
+            <div className="flex flex-wrap gap-3 mb-5">
               <StatBadge icon={<Tv size={14} />} label={anime.episodes ? anime.episodes + " Episodes" : "Ongoing"} />
               <StatBadge icon={<Clock size={14} />} label={anime.duration || "N/A"} />
               <StatBadge label={anime.type || "TV"} />
@@ -120,7 +138,7 @@ export default function AnimeDetailPage() {
                 <button
                   key={genre.mal_id}
                   onClick={() => router.push("/genre/" + genre.mal_id)}
-                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  className="px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105"
                   style={{ background: "rgba(229,9,20,0.1)", color: "#e50914", border: "1px solid rgba(229,9,20,0.25)" }}
                 >
                   {genre.name}
@@ -128,27 +146,34 @@ export default function AnimeDetailPage() {
               ))}
             </div>
 
+            {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 mb-6">
               <button
                 onClick={() => router.push("/anime/watch/" + id)}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:scale-105 active:scale-95"
                 style={{ background: "#e50914", color: "#fff7f6" }}
               >
                 <Play size={18} fill="white" />
                 WATCH NOW
               </button>
 
+              {/* Bookmark Button — fungsional */}
               <button
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm border"
-                style={{ background: "rgba(255,255,255,0.08)", color: "#ffdad5", borderColor: "rgba(255,255,255,0.15)" }}
+                onClick={handleBookmark}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:scale-105 active:scale-95 border"
+                style={{
+                  background: bookmarked ? "rgba(229,9,20,0.15)" : "rgba(255,255,255,0.08)",
+                  color: bookmarked ? "#e50914" : "#ffdad5",
+                  borderColor: bookmarked ? "rgba(229,9,20,0.4)" : "rgba(255,255,255,0.15)",
+                }}
               >
-                <Plus size={18} />
-                MY LIST
+                {bookmarked ? <Check size={18} /> : <Plus size={18} />}
+                {bookmarked ? "IN MY LIST" : "MY LIST"}
               </button>
 
               <button
                 onClick={() => window.open(anime.url, "_blank")}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm border"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:scale-105 border"
                 style={{ background: "rgba(255,255,255,0.05)", color: "#c7c6c6", borderColor: "rgba(255,255,255,0.1)" }}
               >
                 <ExternalLink size={16} />
@@ -158,6 +183,7 @@ export default function AnimeDetailPage() {
           </div>
         </div>
 
+        {/* Tabs */}
         <div
           className="flex gap-1 mt-8 mb-6 p-1 rounded-xl w-fit"
           style={{ background: "rgba(255,255,255,0.05)" }}
@@ -177,6 +203,7 @@ export default function AnimeDetailPage() {
           ))}
         </div>
 
+        {/* Overview */}
         {activeTab === "overview" && (
           <div className="flex flex-col gap-8">
             <div>
@@ -186,21 +213,27 @@ export default function AnimeDetailPage() {
               </p>
             </div>
 
-            {trailerId && (
+            {/* Trailer */}
+            {(trailerId || embedUrl) && (
               <div>
                 <h2 className="text-lg font-semibold mb-3" style={{ color: "#ffdad5" }}>Trailer</h2>
                 <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9", maxWidth: "700px" }}>
                   <iframe
-                    src={"https://www.youtube.com/embed/" + trailerId}
+                    src={trailerId
+                      ? "https://www.youtube.com/embed/" + trailerId + "?rel=0&modestbranding=1"
+                      : embedUrl?.replace("autoplay=1", "autoplay=0").replace("youtube-nocookie.com", "youtube.com")
+                    }
                     title="Anime Trailer"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
                     className="w-full h-full"
+                    style={{ border: "none" }}
                   />
                 </div>
               </div>
             )}
 
+            {/* Info Grid */}
             <div>
               <h2 className="text-lg font-semibold mb-3" style={{ color: "#ffdad5" }}>Information</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -218,13 +251,8 @@ export default function AnimeDetailPage() {
           </div>
         )}
 
-        {activeTab === "episodes" && (
-          <EpisodeTab animeId={id} />
-        )}
-
-        {activeTab === "related" && (
-          <RelatedAnime relations={anime.relations} />
-        )}
+        {activeTab === "episodes" && <EpisodeTab animeId={id} />}
+        {activeTab === "related" && <RelatedAnime relations={anime.relations} />}
       </div>
     </main>
   );
@@ -236,18 +264,14 @@ function StatBadge({ icon, label }) {
       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
       style={{ background: "rgba(255,255,255,0.06)", color: "#c7c6c6", border: "1px solid rgba(255,255,255,0.08)" }}
     >
-      {icon}
-      {label}
+      {icon}{label}
     </div>
   );
 }
 
 function InfoItem({ label, value }) {
   return (
-    <div
-      className="p-3 rounded-xl"
-      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
-    >
+    <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
       <p className="text-xs mb-1" style={{ color: "#af8782" }}>{label}</p>
       <p className="text-sm font-medium" style={{ color: "#ffdad5" }}>{value}</p>
     </div>
@@ -277,9 +301,7 @@ function EpisodeTab({ animeId }) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {Array(8).fill(0).map((_, i) => (
-          <div key={i} className="skeleton h-16 rounded-xl" />
-        ))}
+        {Array(8).fill(0).map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
       </div>
     );
   }
@@ -298,8 +320,10 @@ function EpisodeTab({ animeId }) {
         <button
           key={ep.mal_id}
           onClick={() => router.push("/anime/watch/" + animeId + "?ep=" + ep.mal_id)}
-          className="flex items-center gap-4 p-4 rounded-xl text-left w-full"
+          className="flex items-center gap-4 p-4 rounded-xl text-left w-full transition-all hover:scale-[1.01]"
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          onMouseEnter={(e) => e.currentTarget.style.borderColor = "rgba(229,9,20,0.3)"}
+          onMouseLeave={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"}
         >
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm"
@@ -311,6 +335,11 @@ function EpisodeTab({ animeId }) {
             <p className="text-sm font-medium truncate" style={{ color: "#ffdad5" }}>
               {ep.title || "Episode " + ep.mal_id}
             </p>
+            {ep.aired && (
+              <p className="text-xs mt-0.5" style={{ color: "#af8782" }}>
+                {new Date(ep.aired).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            )}
           </div>
           <Play size={16} style={{ color: "#e50914", flexShrink: 0 }} />
         </button>
@@ -340,11 +369,7 @@ function ErrorState({ message, onBack }) {
   return (
     <main className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
       <p className="text-lg" style={{ color: "#ff4444" }}>{message}</p>
-      <button
-        onClick={onBack}
-        className="px-6 py-3 rounded-xl font-medium"
-        style={{ background: "#e50914", color: "white" }}
-      >
+      <button onClick={onBack} className="px-6 py-3 rounded-xl font-medium" style={{ background: "#e50914", color: "white" }}>
         Go Back
       </button>
     </main>
