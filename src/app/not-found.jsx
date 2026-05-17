@@ -8,19 +8,25 @@ export default function NotFound() {
   const [countdown, setCountdown] = useState(10);
 
   // Auto redirect ke home setelah 10 detik
-  useEffect(() => {
+    useEffect(() => {
     const timer = setInterval(() => {
-      setCountdown((prev) => {
+        setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
-          router.push("/");
-          return 0;
+            clearInterval(timer);
+            return 0;
         }
         return prev - 1;
-      });
+        });
     }, 1000);
     return () => clearInterval(timer);
-  }, [router]);
+    }, []);
+
+    // Pisah useEffect untuk redirect
+    useEffect(() => {
+    if (countdown === 0) {
+        router.push("/");
+    }
+    }, [countdown]);
 
   return (
     <main className="min-h-screen bg-black flex flex-col items-center justify-center px-5 text-center">
