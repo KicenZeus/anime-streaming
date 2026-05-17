@@ -55,11 +55,12 @@ export default function RegisterPage() {
         email: formData.email,
         password: formData.password,
       });
-      login(result.user, result.token);
-      toast.success("Welcome to ANIMEX, " + result.user.username + "!");
+      login(result.data.user, result.data.token);
+      toast.success("Welcome to ANIMEX, " + result.data.user.username + "!");
       router.push("/");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Registration failed.");
+      const message = err.response?.data?.message || "Registration failed.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

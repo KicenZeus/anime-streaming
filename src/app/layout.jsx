@@ -27,7 +27,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className={`${inter.className} antialiased`}>
         {/* SessionWrapper wrap semua supaya useSession bisa dipakai di mana saja */}
         <SessionWrapper>

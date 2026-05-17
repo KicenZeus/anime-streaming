@@ -32,6 +32,9 @@ export const jikanApi = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Tambah ini sementara untuk debug
+console.log("Backend URL:", process.env.NEXT_PUBLIC_BACKEND_URL);
+
 // Rate limit interceptor
 jikanApi.interceptors.request.use(async (config) => {
   await waitForQueue();

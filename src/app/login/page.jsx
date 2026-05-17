@@ -42,11 +42,13 @@ export default function LoginPage() {
     try {
       setLoading(true);
       const result = await loginUser(formData);
-      login(result.user, result.token);
-      toast.success("Welcome back, " + result.user.username + "!");
+      // result.data berisi { user, token }
+      login(result.data.user, result.data.token);
+      toast.success("Welcome back, " + result.data.user.username + "!");
       router.push("/");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Login failed.");
+      const message = err.response?.data?.message || "Login failed.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

@@ -73,7 +73,7 @@ export default function Navbar() {
       <motion.nav
         className="fixed top-0 w-full z-50 flex items-center justify-between px-5 md:px-16 py-4"
         animate={{
-          background: isScrolled ? "rgba(10,10,11,0.95)" : "transparent",
+          background: isScrolled ? "rgba(10,10,11,0.95)" : "rgba(0,0,0,0)",
           borderBottom: isScrolled ? "1px solid rgba(255,255,255,0.07)" : "1px solid transparent",
         }}
         transition={{ duration: 0.3 }}
