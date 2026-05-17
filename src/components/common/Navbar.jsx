@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Bell, Menu, X, LogOut, User, Bookmark } from "lucide-react";
 import { MAIN_NAV_LINKS } from "@/lib/constants";
 import useAuthStore from "@/store/authStore";
-import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { signOut, useSession } from "next-auth/react";
 

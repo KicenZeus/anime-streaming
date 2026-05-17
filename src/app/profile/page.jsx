@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import {
   User, Mail, Calendar, Bookmark, Clock,
   Star, Settings, LogOut, Edit3, Film
