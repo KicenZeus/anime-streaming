@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useRef } from "react";
+import { motion } from "framer-motion";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
 export default function SectionRow({ title, children, seeAllHref, className }) {
@@ -19,42 +20,55 @@ export default function SectionRow({ title, children, seeAllHref, className }) {
   };
 
   return (
-    <section className={className || ""}>
+    <motion.section
+      className={className || ""}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
+      {/* Header */}
       <div className="flex items-center justify-between px-5 md:px-16 mb-5">
-        <h2 className="text-xl md:text-2xl font-semibold" style={{ color: "#ffdad5" }}>
+        <h2
+          className="text-xl md:text-2xl font-bold tracking-tight"
+          style={{ color: "#ffdad5" }}
+        >
           {title}
         </h2>
         {seeAllHref && (
-          <a href={seeAllHref} style={{ color: "#e50914", fontSize: "14px" }}>
-            See All
-          </a>
+          <motion.a
+            href={seeAllHref}
+            className="flex items-center gap-1 text-sm font-semibold"
+            style={{ color: "#e50914" }}
+            whileHover={{ x: 4 }}
+            transition={{ duration: 0.2 }}
+          >
+            See All <ChevronRight size={16} />
+          </motion.a>
         )}
       </div>
 
+      {/* Scrollable Row */}
       <div style={{ position: "relative" }}>
-        <button
+        {/* Arrow Left */}
+        <motion.button
           onClick={scrollLeft}
+          className="absolute left-2 top-1/2 z-20 w-9 h-9 rounded-full flex items-center justify-center"
           style={{
-            position: "absolute",
-            left: "8px",
-            top: "50%",
             transform: "translateY(-50%)",
-            zIndex: 20,
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "rgba(0,0,0,0.8)",
-            border: "1px solid rgba(255,255,255,0.2)",
+            background: "rgba(0,0,0,0.85)",
+            border: "1px solid rgba(255,255,255,0.15)",
             color: "#ffdad5",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
           }}
+          whileHover={{ scale: 1.1, background: "rgba(229,9,20,0.8)" }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
         >
           <ChevronLeft size={18} />
-        </button>
+        </motion.button>
 
+        {/* Scroll Container */}
         <div
           ref={scrollRef}
           className="hide-scrollbar"
@@ -62,37 +76,32 @@ export default function SectionRow({ title, children, seeAllHref, className }) {
             display: "flex",
             gap: "16px",
             overflowX: "auto",
-            paddingLeft: "20px",
-            paddingRight: "20px",
+            paddingLeft: "64px",
+            paddingRight: "64px",
             paddingBottom: "16px",
           }}
         >
           {children}
         </div>
 
-        <button
+        {/* Arrow Right */}
+        <motion.button
           onClick={scrollRight}
+          className="absolute right-2 top-1/2 z-20 w-9 h-9 rounded-full flex items-center justify-center"
           style={{
-            position: "absolute",
-            right: "8px",
-            top: "50%",
             transform: "translateY(-50%)",
-            zIndex: 20,
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "rgba(0,0,0,0.8)",
-            border: "1px solid rgba(255,255,255,0.2)",
+            background: "rgba(0,0,0,0.85)",
+            border: "1px solid rgba(255,255,255,0.15)",
             color: "#ffdad5",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
           }}
+          whileHover={{ scale: 1.1, background: "rgba(229,9,20,0.8)" }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
         >
           <ChevronRight size={18} />
-        </button>
+        </motion.button>
       </div>
-    </section>
+    </motion.section>
   );
 }
