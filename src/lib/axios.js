@@ -1,26 +1,53 @@
 import axios from "axios";
 import { JIKAN_BASE_URL, BACKEND_BASE_URL } from "./constants";
 
+// Request queue buat rate limiting
+let requestQueue = [];
+let isProcessing = false;
+
+const processQueue = async () => {
+  if (isProcessing || requestQueue.length === 0) return;
+  isProcessing = true;
+
+  while (requestQueue.length > 0) {
+    const { resolve } = requestQueue.shift();
+    resolve();
+    // Delay 400ms antar request ke Jikan
+    await new Promise((r) => setTimeout(r, 400));
+  }
+
+  isProcessing = false;
+};
+
+const waitForQueue = () => {
+  return new Promise((resolve) => {
+    requestQueue.push({ resolve });
+    processQueue();
+  });
+};
+
 export const jikanApi = axios.create({
   baseURL: JIKAN_BASE_URL,
   timeout: 15000,
   headers: { "Content-Type": "application/json" },
 });
 
-// Auto retry kalau kena 429
+// Rate limit interceptor
+jikanApi.interceptors.request.use(async (config) => {
+  await waitForQueue();
+  return config;
+});
+
+// Retry on 429
 jikanApi.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config;
-
-    // Kalau 429 dan belum pernah retry
     if (error.response?.status === 429 && !config._retryCount) {
       config._retryCount = 1;
-      // Tunggu 1.5 detik lalu retry
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((r) => setTimeout(r, 2000));
       return jikanApi(config);
     }
-
     return Promise.reject(error);
   }
 );
