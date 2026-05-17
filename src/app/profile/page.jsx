@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import toast from "react-hot-toast";
+import { signOut } from "next-auth/react";
+
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -34,8 +36,9 @@ export default function ProfilePage() {
     avatar: session.user.image,
   } : null);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     logout();
+    await signOut({ redirect: false });
     toast.success("Logged out successfully");
     router.push("/");
   };

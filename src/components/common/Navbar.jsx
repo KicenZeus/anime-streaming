@@ -9,6 +9,8 @@ import { MAIN_NAV_LINKS } from "@/lib/constants";
 import useAuthStore from "@/store/authStore";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import { signOut, useSession } from "next-auth/react";
+
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -57,8 +59,13 @@ export default function Navbar() {
     setSearchQuery("");
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Logout dari Zustand store (email login)
     logout();
+
+    // Logout dari NextAuth (Google login)
+    await signOut({ redirect: false });
+
     toast.success("Logged out successfully");
     router.push("/");
     setIsProfileMenuOpen(false);
