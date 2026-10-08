@@ -41,7 +41,7 @@ const nextConfig = {
               "img-src 'self' data: blob: https: http:",
               "media-src 'self' blob: https:",
               "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://accounts.google.com",
-              "connect-src 'self' https://api.jikan.moe https://accounts.google.com https://www.googleapis.com http://localhost:5000 http://localhost:3000",
+              "connect-src 'self' https://graphql.anilist.co https://kitsu.io https://api.jikan.moe https://accounts.google.com https://www.googleapis.com http://localhost:5000 http://localhost:3000",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
@@ -59,6 +59,8 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
+      { protocol: "https", hostname: "s4.anilist.co" },
+      { protocol: "https", hostname: "media.kitsu.io" },
       { protocol: "https", hostname: "cdn.myanimelist.net" },
       { protocol: "https", hostname: "img1.ak.crunchyroll.com" },
       { protocol: "https", hostname: "www.youtube.com" },

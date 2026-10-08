@@ -286,9 +286,9 @@ function EpisodeTab({ animeId }) {
   useEffect(() => {
     const fetchEpisodes = async () => {
       try {
-        const { jikanApi } = await import("@/lib/axios");
-        const res = await jikanApi.get("/anime/" + animeId + "/episodes");
-        setEpisodes(res.data.data || []);
+        const { getAnimeEpisodes } = await import("@/services/animeService");
+        const res = await getAnimeEpisodes(animeId);
+        setEpisodes(res.data || []);
       } catch (err) {
         console.error("Episodes fetch error:", err);
       } finally {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Play, List } from "lucide-react";
-import { jikanApi } from "@/lib/axios";
+import { getAnimeEpisodes } from "@/services/animeService";
 
 // ================================
 // EPISODE SIDEBAR
@@ -19,8 +19,8 @@ export default function EpisodeSidebar({ animeId, totalEpisodes, selectedEp, onE
     const fetchEpisodes = async () => {
       try {
         setLoading(true);
-        const res = await jikanApi.get("/anime/" + animeId + "/episodes");
-        setEpisodes(res.data.data || []);
+        const res = await getAnimeEpisodes(animeId);
+        setEpisodes(res.data || []);
       } catch (err) {
         console.error("Episodes sidebar error:", err);
         // Kalau tidak ada data episode dari Jikan,
