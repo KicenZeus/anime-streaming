@@ -512,34 +512,28 @@ export const getEpisodeStreamServers = (animeOrId, episodeNumber = 1) => {
 
   const servers = [
     {
+      id: "vidsrc-me",
+      name: "Server 1 (VidSrc Anime HD)",
+      streamUrl: `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episodeNumber}`,
+      streamType: "embed",
+    },
+    {
+      id: "multiembed",
+      name: "Server 2 (MultiEmbed HD)",
+      streamUrl: `https://multiembed.mov/?video_id=${malId}&tmdb=0`,
+      streamType: "embed",
+    },
+    {
+      id: "2embed",
+      name: "Server 3 (2Embed Stream)",
+      streamUrl: `https://www.2embed.cc/embed/${malId}`,
+      streamType: "embed",
+    },
+    {
       id: "consumet",
-      name: "Server 1 (Consumet HD)",
+      name: "Server 4 (Consumet Proxy)",
       streamUrl: `${CONSUMET_BASE_URL}/anime/anilist/watch/${anilistId}?ep=${episodeNumber}`,
       streamType: "consumet",
-    },
-    {
-      id: "videasy-sub",
-      name: "Server 2 (Videasy Sub)",
-      streamUrl: `https://player.videasy.to/anime/${malId}/${episodeNumber}/sub`,
-      streamType: "embed",
-    },
-    {
-      id: "videasy-dub",
-      name: "Server 3 (Videasy Dub)",
-      streamUrl: `https://player.videasy.to/anime/${malId}/${episodeNumber}/dub`,
-      streamType: "embed",
-    },
-    {
-      id: "vidlink-sub",
-      name: "Server 4 (VidLink Sub)",
-      streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
-      streamType: "embed",
-    },
-    {
-      id: "vidlink-dub",
-      name: "Server 5 (VidLink Dub)",
-      streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/dub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
-      streamType: "embed",
     },
   ];
 
@@ -572,7 +566,7 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
 
   const availableServers = getEpisodeStreamServers(animeOrId, episodeNumber);
 
-  // 1. Jika user memilih server alternatif manual (Videasy, VidLink, Trailer)
+  // 1. Jika user memilih server selain Consumet
   if (requestedServerId && requestedServerId !== "consumet") {
     const selected = availableServers.find((s) => s.id === requestedServerId);
     if (selected) {
@@ -586,40 +580,38 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
     }
   }
 
-  // 2. Default: Ambil dari Consumet API backend (Server 1)
-  try {
-    const watchRes = await consumetApi.get(`/anime/anilist/watch/${anilistId}?ep=${episodeNumber}`);
-    const sources = watchRes.data?.sources || [];
-    const bestSource = sources.find((s) => s.quality === "default" || s.quality === "1080p" || s.isM3U8) || sources[0];
+  // 2. Jika user memilih Server 4 (Consumet Proxy)
+  if (requestedServerId === "consumet") {
+    try {
+      const watchRes = await consumetApi.get(`/anime/anilist/watch/${anilistId}?ep=${episodeNumber}`);
+      const sources = watchRes.data?.sources || [];
+      const bestSource = sources.find((s) => s.quality === "default" || s.quality === "1080p" || s.isM3U8) || sources[0];
 
-    if (bestSource?.url) {
-      const isHls = Boolean(bestSource.isM3U8 || bestSource.url?.includes(".m3u8"));
-      const sType = isHls ? "hls" : "embed";
+      if (bestSource?.url) {
+        const isHls = Boolean(bestSource.isM3U8 || bestSource.url?.includes(".m3u8"));
+        const sType = isHls ? "hls" : "embed";
 
-      return {
-        streamUrl: bestSource.url,
-        streamType: sType,
-        subtitles: watchRes.data?.subtitles || [],
-        server: "Server 1 (Consumet HD)",
-        serverId: "consumet",
-        availableServers,
-      };
+        return {
+          streamUrl: bestSource.url,
+          streamType: sType,
+          subtitles: watchRes.data?.subtitles || [],
+          server: "Server 4 (Consumet Proxy)",
+          serverId: "consumet",
+          availableServers,
+        };
+      }
+    } catch (err) {
+      console.warn("Consumet fetch error:", err.message);
     }
-  } catch (err) {
-    console.warn("Consumet fetch error:", err.message);
   }
 
-  // 3. Fallback jika Consumet tidak menghasilkan video: gunakan Server 2 (Videasy Sub)
-  const fallbackServer =
-    availableServers.find((s) => s.id === "videasy-sub") ||
-    availableServers[1] ||
-    availableServers[0];
-
+  // 3. Default: Gunakan Server 1 (VidSrc Anime HD) yang terverifikasi aktif
+  const defaultServer = availableServers[0];
   return {
-    streamUrl: fallbackServer.streamUrl,
-    streamType: fallbackServer.streamType,
-    server: fallbackServer.name,
-    serverId: fallbackServer.id,
+    streamUrl: defaultServer.streamUrl,
+    streamType: defaultServer.streamType,
+    server: defaultServer.name,
+    serverId: defaultServer.id,
     availableServers,
   };
 };

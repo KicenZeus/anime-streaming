@@ -166,31 +166,61 @@ export default function VideoPlayer({
 
   // ===== IFRAME EMBED / YOUTUBE PLAYER =====
   if ((streamType === "youtube" || streamType === "embed") && streamUrl) {
-    return (
-      <div
-        className="relative w-full bg-black overflow-hidden"
-        style={{ aspectRatio: "16/9", maxHeight: "75vh" }}
-      >
-        {/* Poster background selagi player menginisialisasi */}
-        {posterUrl && (
-          <img
-            src={posterUrl}
-            alt={animeTitle}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{ filter: "blur(10px) brightness(0.2)", zIndex: 0 }}
-          />
-        )}
+    const isEmbed = streamType === "embed";
 
-        <iframe
-          key={streamUrl}
-          src={streamUrl}
-          title={animeTitle + " - Episode " + episodeNumber}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
-          allowFullScreen
-          referrerPolicy="no-referrer-when-downgrade"
-          className="relative w-full h-full"
-          style={{ border: "none", zIndex: 1, backgroundColor: "transparent" }}
-        />
+    return (
+      <div className="relative w-full flex flex-col">
+        <div
+          className="relative w-full bg-black overflow-hidden rounded-xl shadow-2xl"
+          style={{ aspectRatio: "16/9", maxHeight: "75vh" }}
+        >
+          {/* Poster background selagi player menginisialisasi */}
+          {posterUrl && (
+            <img
+              src={posterUrl}
+              alt={animeTitle}
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              style={{ filter: "blur(10px) brightness(0.2)", zIndex: 0 }}
+            />
+          )}
+
+          <iframe
+            key={streamUrl}
+            src={streamUrl}
+            title={animeTitle + " - Episode " + episodeNumber}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
+            allowFullScreen
+            referrerPolicy="origin"
+            className="relative w-full h-full"
+            style={{ border: "none", zIndex: 1, backgroundColor: "transparent" }}
+          />
+
+          {/* Quick External Link Button for Embeds */}
+          {isEmbed && (
+            <div className="absolute top-3 right-3 z-10">
+              <a
+                href={streamUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-black/75 hover:bg-red-600 transition-all backdrop-blur-md shadow-lg border border-white/10"
+                title="Buka langsung di tab baru jika pemutar terhalang"
+              >
+                <span>Buka di Tab Baru</span>
+                <Maximize size={12} />
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Server Helper Banner */}
+        {isEmbed && (
+          <div className="mt-2.5 px-3.5 py-2 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between text-xs text-white/70">
+            <span className="flex items-center gap-1.5">
+              <AlertCircle size={14} className="text-amber-400 shrink-0" />
+              <span>Jika video buffering atau tidak berputar, coba pilih server lain di bawah atau klik <strong>Buka di Tab Baru</strong>.</span>
+            </span>
+          </div>
+        )}
       </div>
     );
   }
