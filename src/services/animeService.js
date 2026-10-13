@@ -497,43 +497,75 @@ export const getStreamingUrl = async (episodeId) => {
 };
 
 /**
+/**
  * Daftar server streaming yang tersedia untuk satu episode
  */
 export const getEpisodeStreamServers = (animeOrId, episodeNumber = 1) => {
   let malId = animeOrId;
   let anilistId = animeOrId;
   let trailerId = null;
+  let isUpcoming = false;
 
   if (typeof animeOrId === "object" && animeOrId !== null) {
     malId = animeOrId.idMal || animeOrId.mal_id || animeOrId.id;
     anilistId = animeOrId.id || malId;
     trailerId = animeOrId.trailer?.youtube_id;
+    const rawStatus = (animeOrId.status || "").toLowerCase();
+    isUpcoming =
+      rawStatus.includes("not yet") ||
+      rawStatus.includes("upcoming") ||
+      (animeOrId.episodes === 0 && !rawStatus.includes("releasing"));
+  }
+
+  // Jika anime berstatus Belum Rilis / Upcoming dan memiliki Trailer
+  if (isUpcoming && trailerId) {
+    return [
+      {
+        id: "trailer",
+        name: "Official Trailer (Upcoming Anime)",
+        streamUrl: `https://www.youtube.com/embed/${trailerId}?rel=0&autoplay=1`,
+        streamType: "youtube",
+        isUpcoming: true,
+      },
+    ];
   }
 
   const servers = [
     {
-      id: "vidsrc-me",
-      name: "Server 1 (VidSrc Anime HD)",
-      streamUrl: `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episodeNumber}`,
+      id: "videasy-sub",
+      name: "Server 1 (Videasy Sub HD)",
+      streamUrl: `https://player.videasy.to/anime/${malId}/${episodeNumber}/sub`,
       streamType: "embed",
     },
     {
-      id: "multiembed",
-      name: "Server 2 (MultiEmbed HD)",
-      streamUrl: `https://multiembed.mov/?video_id=${malId}&tmdb=0`,
+      id: "vidlink-sub",
+      name: "Server 2 (VidLink Sub HD)",
+      streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
       streamType: "embed",
     },
     {
-      id: "2embed",
-      name: "Server 3 (2Embed Stream)",
-      streamUrl: `https://www.2embed.cc/embed/${malId}`,
+      id: "videasy-dub",
+      name: "Server 3 (Videasy Dub)",
+      streamUrl: `https://player.videasy.to/anime/${malId}/${episodeNumber}/dub`,
+      streamType: "embed",
+    },
+    {
+      id: "vidlink-dub",
+      name: "Server 4 (VidLink Dub)",
+      streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/dub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
       streamType: "embed",
     },
     {
       id: "consumet",
-      name: "Server 4 (Consumet Proxy)",
+      name: "Server 5 (Consumet Proxy)",
       streamUrl: `${CONSUMET_BASE_URL}/anime/anilist/watch/${anilistId}?ep=${episodeNumber}`,
       streamType: "consumet",
+    },
+    {
+      id: "vidsrc-me",
+      name: "Server 6 (VidSrc Anime)",
+      streamUrl: `https://vidsrc.me/embed/anime?mal=${malId}&ep=${episodeNumber}`,
+      streamType: "embed",
     },
   ];
 
@@ -555,18 +587,46 @@ export const getEpisodeStreamServers = (animeOrId, episodeNumber = 1) => {
 export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle = "", requestedServerId = null) => {
   let malId = animeOrId;
   let anilistId = animeOrId;
+  let trailerId = null;
+  let isUpcoming = false;
 
   if (typeof animeOrId === "object" && animeOrId !== null) {
     malId = animeOrId.idMal || animeOrId.mal_id || animeOrId.id;
     anilistId = animeOrId.id || malId;
+    trailerId = animeOrId.trailer?.youtube_id;
+    const rawStatus = (animeOrId.status || "").toLowerCase();
+    isUpcoming =
+      rawStatus.includes("not yet") ||
+      rawStatus.includes("upcoming") ||
+      (animeOrId.episodes === 0 && !rawStatus.includes("releasing"));
     if (!animeTitle) {
       animeTitle = animeOrId.title_english || animeOrId.title || "";
     }
   }
 
+  // Jika anime berstatus Belum Rilis / Upcoming:
+  if (isUpcoming && trailerId) {
+    return {
+      streamUrl: `https://www.youtube.com/embed/${trailerId}?rel=0&autoplay=1`,
+      streamType: "youtube",
+      server: "Official Trailer (Anime Belum Tayang)",
+      serverId: "trailer",
+      isUpcoming: true,
+      availableServers: [
+        {
+          id: "trailer",
+          name: "Official Trailer",
+          streamUrl: `https://www.youtube.com/embed/${trailerId}?rel=0&autoplay=1`,
+          streamType: "youtube",
+          isUpcoming: true,
+        },
+      ],
+    };
+  }
+
   const availableServers = getEpisodeStreamServers(animeOrId, episodeNumber);
 
-  // 1. Jika user memilih server selain Consumet
+  // 1. Jika user memilih server tertentu
   if (requestedServerId && requestedServerId !== "consumet") {
     const selected = availableServers.find((s) => s.id === requestedServerId);
     if (selected) {
@@ -576,11 +636,12 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
         server: selected.name,
         serverId: selected.id,
         availableServers,
+        isUpcoming: false,
       };
     }
   }
 
-  // 2. Jika user memilih Server 4 (Consumet Proxy)
+  // 2. Jika user memilih Server 5 (Consumet Proxy)
   if (requestedServerId === "consumet") {
     try {
       const watchRes = await consumetApi.get(`/anime/anilist/watch/${anilistId}?ep=${episodeNumber}`);
@@ -595,9 +656,10 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
           streamUrl: bestSource.url,
           streamType: sType,
           subtitles: watchRes.data?.subtitles || [],
-          server: "Server 4 (Consumet Proxy)",
+          server: "Server 5 (Consumet Proxy)",
           serverId: "consumet",
           availableServers,
+          isUpcoming: false,
         };
       }
     } catch (err) {
@@ -605,13 +667,20 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
     }
   }
 
-  // 3. Default: Gunakan Server 1 (VidSrc Anime HD) yang terverifikasi aktif
-  const defaultServer = availableServers[0];
+  // 3. Default: Gunakan Server 1 (Videasy Sub HD) yang terbukti cepat dan stabil untuk MAL ID
+  const defaultServer = availableServers[0] || {
+    id: "videasy-sub",
+    name: "Server 1 (Videasy Sub HD)",
+    streamUrl: `https://player.videasy.to/anime/${malId}/${episodeNumber}/sub`,
+    streamType: "embed",
+  };
+
   return {
     streamUrl: defaultServer.streamUrl,
     streamType: defaultServer.streamType,
     server: defaultServer.name,
     serverId: defaultServer.id,
     availableServers,
+    isUpcoming: false,
   };
 };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { ChevronLeft, AlertCircle, Film, Server } from "lucide-react";
+import { ChevronLeft, AlertCircle, Film, Server, Info, ExternalLink } from "lucide-react";
 import { getAnimeById, getEpisodeStream } from "@/services/animeService";
 import { getAnimeImage } from "@/lib/utils";
 import VideoPlayer from "@/components/player/VideoPlayer";
@@ -25,7 +25,8 @@ function WatchContent() {
   const [serverName, setServerName] = useState("");
   const [streamLoading, setStreamLoading] = useState(false);
   const [availableServers, setAvailableServers] = useState([]);
-  const [currentServerId, setCurrentServerId] = useState("vidsrc-me");
+  const [currentServerId, setCurrentServerId] = useState("videasy-sub");
+  const [isUpcoming, setIsUpcoming] = useState(false);
 
   // Fetch anime detail
   useEffect(() => {
@@ -62,6 +63,12 @@ function WatchContent() {
 
         if (streamInfo?.availableServers) {
           setAvailableServers(streamInfo.availableServers);
+        }
+
+        if (streamInfo?.isUpcoming) {
+          setIsUpcoming(true);
+        } else {
+          setIsUpcoming(false);
         }
 
         if (streamInfo?.streamUrl) {
@@ -141,7 +148,7 @@ function WatchContent() {
           </p>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs" style={{ color: "#af8782" }}>
-              Episode {selectedEp}
+              {isUpcoming ? "Official Trailer" : `Episode ${selectedEp}`}
             </span>
             {serverName && (
               <span
@@ -160,6 +167,28 @@ function WatchContent() {
       <div className="flex flex-col lg:flex-row" style={{ minHeight: "calc(100vh - 112px)" }}>
         {/* Player Area */}
         <div className="flex-1">
+          {/* Upcoming Notice Banner */}
+          {isUpcoming && (
+            <div
+              className="mx-4 md:mx-6 mt-4 p-4 rounded-xl flex items-start gap-3 border"
+              style={{
+                background: "rgba(245, 158, 11, 0.1)",
+                borderColor: "rgba(245, 158, 11, 0.3)",
+                color: "#fef3c7",
+              }}
+            >
+              <Info className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
+              <div>
+                <h3 className="font-semibold text-sm text-amber-300">
+                  Anime Ini Belum Resmi Tayang (Upcoming / Belum Rilis)
+                </h3>
+                <p className="text-xs mt-1 text-amber-200/90 leading-relaxed">
+                  Anime ini baru diumumkan dan episode resminya belum ditayangkan di TV maupun platform streaming mana pun. Player di bawah saat ini memutar <strong>Official Trailer YouTube</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+
           {streamUrl ? (
             <VideoPlayer
               streamUrl={streamUrl}
@@ -186,7 +215,7 @@ function WatchContent() {
           )}
 
           {/* Server Selector Bar */}
-          {availableServers.length > 0 && (
+          {availableServers.length > 0 && !isUpcoming && (
             <div
               className="flex flex-wrap items-center gap-2 px-4 md:px-6 py-3 border-b"
               style={{
@@ -239,8 +268,7 @@ function WatchContent() {
               {anime.title_english || anime.title}
             </h1>
             <p className="text-sm mb-4" style={{ color: "#af8782" }}>
-              Episode {selectedEp}
-              {anime.episodes ? " of " + anime.episodes : ""}
+              {isUpcoming ? "Official Trailer" : `Episode ${selectedEp}${anime.episodes ? " of " + anime.episodes : ""}`}
             </p>
 
             <div className="flex flex-wrap gap-2 mb-4">
@@ -259,10 +287,67 @@ function WatchContent() {
               ))}
             </div>
 
-            <p className="text-sm leading-relaxed" style={{ color: "rgba(199,198,198,0.8)" }}>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(199,198,198,0.8)" }}>
               {anime.synopsis?.slice(0, 300)}
               {anime.synopsis?.length > 300 ? "..." : ""}
             </p>
+
+            {/* Quick External Links (Bstation, YouTube Muse Asia, Crunchyroll) */}
+            <div
+              className="p-4 rounded-xl border"
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                borderColor: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <ExternalLink size={14} style={{ color: "#e50914" }} />
+                <p className="text-xs font-semibold" style={{ color: "#ffdad5" }}>
+                  Tonton di Platform Resmi & Alternatif:
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={`https://www.bilibili.tv/id/search-result?q=${encodeURIComponent(anime.title_english || anime.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:opacity-80 active:scale-95"
+                  style={{
+                    background: "rgba(35, 173, 229, 0.15)",
+                    color: "#23ade5",
+                    border: "1px solid rgba(35, 173, 229, 0.3)",
+                  }}
+                >
+                  Bstation / Bilibili ↗
+                </a>
+                <a
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent((anime.title_english || anime.title) + " full episode sub indo")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:opacity-80 active:scale-95"
+                  style={{
+                    background: "rgba(229, 9, 20, 0.15)",
+                    color: "#ff4d4d",
+                    border: "1px solid rgba(229, 9, 20, 0.3)",
+                  }}
+                >
+                  YouTube (Muse Asia / Ani-One) ↗
+                </a>
+                <a
+                  href={`https://www.crunchyroll.com/search?q=${encodeURIComponent(anime.title_english || anime.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:opacity-80 active:scale-95"
+                  style={{
+                    background: "rgba(244, 117, 33, 0.15)",
+                    color: "#f47521",
+                    border: "1px solid rgba(244, 117, 33, 0.3)",
+                  }}
+                >
+                  Crunchyroll ↗
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
