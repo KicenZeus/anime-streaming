@@ -25,7 +25,7 @@ function WatchContent() {
   const [serverName, setServerName] = useState("");
   const [streamLoading, setStreamLoading] = useState(false);
   const [availableServers, setAvailableServers] = useState([]);
-  const [currentServerId, setCurrentServerId] = useState("videasy-sub");
+  const [currentServerId, setCurrentServerId] = useState("consumet");
 
   // Fetch anime detail
   useEffect(() => {
