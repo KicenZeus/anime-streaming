@@ -510,14 +510,26 @@ export const getEpisodeStreamServers = (animeOrId, episodeNumber = 1) => {
 
   const servers = [
     {
+      id: "videasy-sub",
+      name: "Server 1 (Videasy Sub)",
+      streamUrl: `https://player.videasy.to/anime/${malId}/${episodeNumber}/sub`,
+      streamType: "embed",
+    },
+    {
+      id: "videasy-dub",
+      name: "Server 2 (Videasy Dub)",
+      streamUrl: `https://player.videasy.to/anime/${malId}/${episodeNumber}/dub`,
+      streamType: "embed",
+    },
+    {
       id: "vidlink-sub",
-      name: "Server 1 (Sub HD)",
+      name: "Server 3 (VidLink Sub)",
       streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
       streamType: "embed",
     },
     {
       id: "vidlink-dub",
-      name: "Server 2 (Dub HD)",
+      name: "Server 4 (VidLink Dub)",
       streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/dub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
       streamType: "embed",
     },
