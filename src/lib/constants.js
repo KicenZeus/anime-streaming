@@ -18,7 +18,7 @@ export const BACKEND_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000/api";
 
 export const CONSUMET_BASE_URL =
-  process.env.NEXT_PUBLIC_CONSUMET_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_CONSUMET_URL || "https://api-consumet-eight.vercel.app";
 
 // Jikan API rate limit: max 3 request per detik
 // Kalau lebih dari itu, API akan return error 429
