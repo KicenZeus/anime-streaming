@@ -40,7 +40,7 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: http:",
               "media-src 'self' blob: data: https: http:",
-              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://accounts.google.com https://vidlink.pro",
+              "frame-src 'self' https: blob: data:",
               "connect-src 'self' https: http: blob: data:",
               "object-src 'none'",
               "base-uri 'self'",

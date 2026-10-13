@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Play, Pause, Volume2, VolumeX,
   Maximize, Minimize, SkipForward, SkipBack,
@@ -28,6 +28,10 @@ export default function VideoPlayer({
   const [isBuffering, setIsBuffering] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    setIframeLoaded(false);
+  }, [streamUrl]);
 
   const resetControlsTimer = () => {
     setShowControls(true);
@@ -198,6 +202,7 @@ export default function VideoPlayer({
           title={animeTitle + " - Episode " + episodeNumber}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
+          referrerPolicy="origin"
           className="w-full h-full"
           style={{ border: "none" }}
           onLoad={() => setIframeLoaded(true)}

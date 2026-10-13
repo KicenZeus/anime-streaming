@@ -231,9 +231,15 @@ export const getCurrentSeasonAnime = async (page = 1, limit = 12) => {
 };
 
 /**
- * Ambil detail satu anime berdasarkan ID
+ * Ambil detail satu anime berdasarkan ID (mendukung AniList ID dan MAL ID)
  */
 export const getAnimeById = async (id) => {
+  const numericId = Number(id);
+  if (isNaN(numericId)) {
+    throw new Error("Invalid anime ID");
+  }
+
+  // 1. Coba via AniList ID
   try {
     const query = `
       query ($id: Int) {
@@ -242,14 +248,36 @@ export const getAnimeById = async (id) => {
         }
       }
     `;
-    const data = await fetchGraphQL(query, { id: Number(id) });
-    return {
-      data: mapAniListToApp(data?.Media),
-    };
+    const data = await fetchGraphQL(query, { id: numericId });
+    if (data?.Media) {
+      return {
+        data: mapAniListToApp(data.Media),
+      };
+    }
   } catch (error) {
-    console.error("getAnimeById error:", error.message);
-    throw error;
+    // Lanjutkan ke fallback MAL ID
   }
+
+  // 2. Fallback via MAL ID (idMal)
+  try {
+    const queryMal = `
+      query ($id: Int) {
+        Media(idMal: $id, type: ANIME) {
+          ${MEDIA_FIELDS}
+        }
+      }
+    `;
+    const data = await fetchGraphQL(queryMal, { id: numericId });
+    if (data?.Media) {
+      return {
+        data: mapAniListToApp(data.Media),
+      };
+    }
+  } catch (error) {
+    console.error("getAnimeById fallback error:", error.message);
+  }
+
+  throw new Error("Failed to load anime details.");
 };
 
 /**
@@ -367,57 +395,71 @@ export const getAnimeRecommendations = async () => {
 };
 
 /**
- * Ambil daftar episode untuk satu anime
+ * Ambil daftar episode untuk satu anime (mendukung AniList ID dan MAL ID)
  */
 export const getAnimeEpisodes = async (animeId) => {
-  try {
-    const query = `
-      query ($id: Int) {
-        Media(id: $id, type: ANIME) {
-          episodes
-          streamingEpisodes {
-            title
-            thumbnail
-            url
-          }
+  const numericId = Number(animeId);
+  const query = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        episodes
+        streamingEpisodes {
+          title
+          thumbnail
+          url
         }
       }
-    `;
-    const data = await fetchGraphQL(query, { id: Number(animeId) });
-    const media = data?.Media;
-    const episodesList = media?.streamingEpisodes || [];
-
-    if (episodesList.length > 0) {
-      return {
-        data: episodesList.map((ep, idx) => ({
-          mal_id: idx + 1,
-          title: ep.title || `Episode ${idx + 1}`,
-          thumbnail: ep.thumbnail,
-          url: ep.url,
-        })),
-      };
     }
+  `;
+  const queryMal = `
+    query ($id: Int) {
+      Media(idMal: $id, type: ANIME) {
+        episodes
+        streamingEpisodes {
+          title
+          thumbnail
+          url
+        }
+      }
+    }
+  `;
 
-    const totalEps = media?.episodes || 12;
-    const generated = Array.from({ length: totalEps }, (_, i) => ({
-      mal_id: i + 1,
-      title: `Episode ${i + 1}`,
-    }));
-
-    return { data: generated };
+  let media = null;
+  try {
+    const data = await fetchGraphQL(query, { id: numericId });
+    media = data?.Media;
   } catch (error) {
-    console.error("getAnimeEpisodes error:", error.message);
+    try {
+      const data = await fetchGraphQL(queryMal, { id: numericId });
+      media = data?.Media;
+    } catch (malErr) {
+      console.error("getAnimeEpisodes fallback error:", malErr.message);
+    }
+  }
+
+  const episodesList = media?.streamingEpisodes || [];
+  if (episodesList.length > 0) {
     return {
-      data: Array.from({ length: 12 }, (_, i) => ({
-        mal_id: i + 1,
-        title: `Episode ${i + 1}`,
+      data: episodesList.map((ep, idx) => ({
+        mal_id: idx + 1,
+        title: ep.title || `Episode ${idx + 1}`,
+        thumbnail: ep.thumbnail,
+        url: ep.url,
       })),
     };
   }
+
+  const totalEps = media?.episodes || 12;
+  const generated = Array.from({ length: totalEps }, (_, i) => ({
+    mal_id: i + 1,
+    title: `Episode ${i + 1}`,
+  }));
+
+  return { data: generated };
 };
 
 // ================================
-// CONSUMET / VIDEO STREAMING
+// VIDEO STREAMING & MULTI-SERVER PROVIDERS
 // ================================
 const consumetApi = axios.create({
   baseURL: CONSUMET_BASE_URL,
@@ -455,11 +497,48 @@ export const getStreamingUrl = async (episodeId) => {
 };
 
 /**
- * Ambil stream video per episode
- * 1. Coba stream HLS direct via Consumet API
- * 2. Fallback ke VidLink embed jika Consumet offline/belum di-deploy
+ * Daftar server streaming yang tersedia untuk satu episode
  */
-export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle = "") => {
+export const getEpisodeStreamServers = (animeOrId, episodeNumber = 1) => {
+  let malId = animeOrId;
+  let trailerId = null;
+
+  if (typeof animeOrId === "object" && animeOrId !== null) {
+    malId = animeOrId.idMal || animeOrId.mal_id || animeOrId.id;
+    trailerId = animeOrId.trailer?.youtube_id;
+  }
+
+  const servers = [
+    {
+      id: "vidlink",
+      name: "Server 1 (VidLink HD)",
+      streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
+      streamType: "embed",
+    },
+    {
+      id: "vidsrc",
+      name: "Server 2 (VidSrc)",
+      streamUrl: `https://vidsrc.cc/v2/embed/anime/${malId}/${episodeNumber}/sub`,
+      streamType: "embed",
+    },
+  ];
+
+  if (trailerId) {
+    servers.push({
+      id: "trailer",
+      name: "Official Trailer",
+      streamUrl: `https://www.youtube.com/embed/${trailerId}?rel=0&autoplay=1`,
+      streamType: "youtube",
+    });
+  }
+
+  return servers;
+};
+
+/**
+ * Ambil stream video per episode dengan opsi multi-server
+ */
+export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle = "", requestedServerId = null) => {
   let malId = animeOrId;
   let anilistId = animeOrId;
 
@@ -471,9 +550,24 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
     }
   }
 
-  // Coba ambil dari Consumet API jika aktif
+  const availableServers = getEpisodeStreamServers(animeOrId, episodeNumber);
+
+  // Jika user memilih server tertentu
+  if (requestedServerId) {
+    const selected = availableServers.find((s) => s.id === requestedServerId);
+    if (selected) {
+      return {
+        streamUrl: selected.streamUrl,
+        streamType: selected.streamType,
+        server: selected.name,
+        serverId: selected.id,
+        availableServers,
+      };
+    }
+  }
+
+  // Coba ambil dari Consumet API jika aktif (self-host)
   try {
-    // 1. Coba AniList provider di Consumet
     const anilistInfoRes = await consumetApi.get(`/anime/anilist/info/${anilistId}`);
     const eps = anilistInfoRes.data?.episodes || [];
     const targetEp = eps.find((e) => Number(e.number) === Number(episodeNumber)) || eps[Number(episodeNumber) - 1];
@@ -489,43 +583,30 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
           streamType: "hls",
           subtitles: watchRes.data?.subtitles || [],
           server: "Consumet (AniList HLS)",
+          serverId: "consumet",
+          availableServers: [
+            {
+              id: "consumet",
+              name: "Server Consumet (HLS Direct)",
+              streamUrl: bestSource.url,
+              streamType: "hls",
+            },
+            ...availableServers,
+          ],
         };
       }
     }
   } catch (err) {
-    // Coba fallback Gogoanime provider di Consumet jika judul tersedia
-    try {
-      if (animeTitle) {
-        const searchRes = await consumetApi.get(`/anime/gogoanime/${encodeURIComponent(animeTitle)}`);
-        const firstResult = searchRes.data?.results?.[0];
-        if (firstResult?.id) {
-          const gogoInfo = await consumetApi.get(`/anime/gogoanime/info/${firstResult.id}`);
-          const gogoEps = gogoInfo.data?.episodes || [];
-          const targetGogoEp = gogoEps.find((e) => Number(e.number) === Number(episodeNumber)) || gogoEps[Number(episodeNumber) - 1];
-          if (targetGogoEp?.id) {
-            const watchRes = await consumetApi.get(`/anime/gogoanime/watch/${encodeURIComponent(targetGogoEp.id)}`);
-            const sources = watchRes.data?.sources || [];
-            const bestSource = sources.find((s) => s.isM3U8) || sources[0];
-            if (bestSource?.url) {
-              return {
-                streamUrl: bestSource.url,
-                streamType: "hls",
-                subtitles: watchRes.data?.subtitles || [],
-                server: "Consumet (Gogoanime HLS)",
-              };
-            }
-          }
-        }
-      }
-    } catch (gogoErr) {
-      // Consumet belum aktif / tidak merespons
-    }
+    // Abaikan jika consumet belum aktif
   }
 
-  // Fallback cerdas ke VidLink Embed (menggunakan MAL ID resmi + fallback=true)
+  // Fallback default: Server 1 (VidLink)
+  const defaultServer = availableServers[0];
   return {
-    streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
-    streamType: "embed",
-    server: "VidLink (Sub/Dub)",
+    streamUrl: defaultServer.streamUrl,
+    streamType: defaultServer.streamType,
+    server: defaultServer.name,
+    serverId: defaultServer.id,
+    availableServers,
   };
 };

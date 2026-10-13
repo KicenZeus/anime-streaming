@@ -24,6 +24,8 @@ function WatchContent() {
   const [streamType, setStreamType] = useState("none");
   const [serverName, setServerName] = useState("");
   const [streamLoading, setStreamLoading] = useState(false);
+  const [availableServers, setAvailableServers] = useState([]);
+  const [currentServerId, setCurrentServerId] = useState("vidlink");
 
   // Fetch anime detail
   useEffect(() => {
@@ -44,7 +46,7 @@ function WatchContent() {
     fetchAnime();
   }, [id]);
 
-  // Fetch episode stream saat anime atau selectedEp berubah
+  // Fetch episode stream saat anime, selectedEp, atau server berubah
   useEffect(() => {
     if (!anime) return;
 
@@ -54,8 +56,13 @@ function WatchContent() {
         const streamInfo = await getEpisodeStream(
           anime,
           selectedEp,
-          anime.title_english || anime.title
+          anime.title_english || anime.title,
+          currentServerId
         );
+
+        if (streamInfo?.availableServers) {
+          setAvailableServers(streamInfo.availableServers);
+        }
 
         if (streamInfo?.streamUrl) {
           setStreamUrl(streamInfo.streamUrl);
@@ -81,7 +88,7 @@ function WatchContent() {
     };
 
     fetchStream();
-  }, [anime, selectedEp, id]);
+  }, [anime, selectedEp, currentServerId]);
 
   const handleEpisodeChange = (epNum) => {
     setSelectedEp(epNum);
@@ -175,6 +182,54 @@ function WatchContent() {
                   Anime ini belum memiliki trailer YouTube yang tersedia.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Server Selector Bar */}
+          {availableServers.length > 0 && (
+            <div
+              className="flex flex-wrap items-center gap-2 px-4 md:px-6 py-3 border-b"
+              style={{
+                borderColor: "rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.02)",
+              }}
+            >
+              <div
+                className="flex items-center gap-1.5 text-xs font-semibold mr-1"
+                style={{ color: "#af8782" }}
+              >
+                <Server size={14} style={{ color: "#e50914" }} />
+                <span>PILIH SERVER:</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {availableServers.map((srv) => {
+                  const isActive =
+                    currentServerId === srv.id ||
+                    (!currentServerId && srv.id === "vidlink");
+                  return (
+                    <button
+                      key={srv.id}
+                      onClick={() => setCurrentServerId(srv.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+                      style={{
+                        background: isActive ? "#e50914" : "rgba(255,255,255,0.06)",
+                        color: isActive ? "#ffffff" : "#c7c6c6",
+                        border: isActive
+                          ? "1px solid #e50914"
+                          : "1px solid rgba(255,255,255,0.1)",
+                      }}
+                    >
+                      {srv.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <span
+                className="text-[11px] ml-auto hidden sm:inline-block"
+                style={{ color: "rgba(199,198,198,0.5)" }}
+              >
+                Ganti server jika video loading lambat / terblokir
+              </span>
             </div>
           )}
 
