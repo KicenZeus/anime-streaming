@@ -25,7 +25,7 @@ function WatchContent() {
   const [serverName, setServerName] = useState("");
   const [streamLoading, setStreamLoading] = useState(false);
   const [availableServers, setAvailableServers] = useState([]);
-  const [currentServerId, setCurrentServerId] = useState("vidlink");
+  const [currentServerId, setCurrentServerId] = useState("vidlink-sub");
 
   // Fetch anime detail
   useEffect(() => {
@@ -205,7 +205,7 @@ function WatchContent() {
                 {availableServers.map((srv) => {
                   const isActive =
                     currentServerId === srv.id ||
-                    (!currentServerId && srv.id === "vidlink");
+                    (!currentServerId && srv.id === "vidlink-sub");
                   return (
                     <button
                       key={srv.id}

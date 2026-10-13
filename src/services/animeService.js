@@ -510,15 +510,15 @@ export const getEpisodeStreamServers = (animeOrId, episodeNumber = 1) => {
 
   const servers = [
     {
-      id: "vidlink",
-      name: "Server 1 (VidLink HD)",
+      id: "vidlink-sub",
+      name: "Server 1 (Sub HD)",
       streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
       streamType: "embed",
     },
     {
-      id: "vidsrc",
-      name: "Server 2 (VidSrc)",
-      streamUrl: `https://vidsrc.cc/v2/embed/anime/${malId}/${episodeNumber}/sub`,
+      id: "vidlink-dub",
+      name: "Server 2 (Dub HD)",
+      streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/dub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
       streamType: "embed",
     },
   ];
