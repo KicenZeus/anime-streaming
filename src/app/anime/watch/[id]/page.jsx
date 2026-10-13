@@ -2,8 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { ChevronLeft, AlertCircle } from "lucide-react";
-import { getAnimeById } from "@/services/animeService";
+import { ChevronLeft, AlertCircle, Film, Server } from "lucide-react";
+import { getAnimeById, getEpisodeStream } from "@/services/animeService";
 import { getAnimeImage } from "@/lib/utils";
 import VideoPlayer from "@/components/player/VideoPlayer";
 import EpisodeSidebar from "@/components/player/EpisodeSidebar";
@@ -22,46 +22,18 @@ function WatchContent() {
 
   const [streamUrl, setStreamUrl] = useState(null);
   const [streamType, setStreamType] = useState("none");
+  const [serverName, setServerName] = useState("");
+  const [streamLoading, setStreamLoading] = useState(false);
 
+  // Fetch anime detail
   useEffect(() => {
     if (!id) return;
 
-    const fetch = async () => {
+    const fetchAnime = async () => {
       try {
         setLoading(true);
-
         const result = await getAnimeById(id);
-        const data = result.data;
-
-
-          setAnime(data);
-
-          // Cek youtube_id dulu, kalau null coba embed_url
-          const youtubeId = data.trailer?.youtube_id;
-          const embedUrl = data.trailer?.embed_url;
-
-          if (youtubeId) {
-            // Kalau ada youtube_id, build URL sendiri
-            setStreamUrl(
-              "https://www.youtube.com/embed/" +
-              youtubeId +
-              "?rel=0&modestbranding=1"
-            );
-            setStreamType("youtube");
-          } else if (embedUrl) {
-            // Kalau ada embed_url langsung dari Jikan, pakai itu
-            // Tapi bersihkan dulu parameter autoplay-nya
-            const cleanUrl = embedUrl
-              .replace("autoplay=1", "autoplay=0")
-              .replace("youtube-nocookie.com", "youtube.com");
-
-            setStreamUrl(cleanUrl);
-            setStreamType("youtube");
-          } else {
-            setStreamUrl(null);
-            setStreamType("none");
-          }
-
+        setAnime(result.data);
       } catch (err) {
         console.error("Failed fetch anime:", err);
       } finally {
@@ -69,8 +41,47 @@ function WatchContent() {
       }
     };
 
-    fetch();
+    fetchAnime();
   }, [id]);
+
+  // Fetch episode stream saat anime atau selectedEp berubah
+  useEffect(() => {
+    if (!anime) return;
+
+    const fetchStream = async () => {
+      try {
+        setStreamLoading(true);
+        const streamInfo = await getEpisodeStream(
+          anime.id || id,
+          selectedEp,
+          anime.title_english || anime.title
+        );
+
+        if (streamInfo?.streamUrl) {
+          setStreamUrl(streamInfo.streamUrl);
+          setStreamType(streamInfo.streamType);
+          setServerName(streamInfo.server || "Stream Server");
+        } else if (anime.trailer?.youtube_id) {
+          setStreamUrl(
+            "https://www.youtube.com/embed/" +
+              anime.trailer.youtube_id +
+              "?rel=0&autoplay=1"
+          );
+          setStreamType("youtube");
+          setServerName("YouTube Trailer");
+        } else {
+          setStreamUrl(null);
+          setStreamType("none");
+        }
+      } catch (err) {
+        console.error("Failed to load stream:", err);
+      } finally {
+        setStreamLoading(false);
+      }
+    };
+
+    fetchStream();
+  }, [anime, selectedEp, id]);
 
   const handleEpisodeChange = (epNum) => {
     setSelectedEp(epNum);
@@ -121,9 +132,20 @@ function WatchContent() {
           <p className="text-sm font-semibold truncate" style={{ color: "#ffdad5" }}>
             {anime.title_english || anime.title}
           </p>
-          <p className="text-xs" style={{ color: "#af8782" }}>
-            Episode {selectedEp}
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs" style={{ color: "#af8782" }}>
+              Episode {selectedEp}
+            </span>
+            {serverName && (
+              <span
+                className="text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1"
+                style={{ background: "rgba(229,9,20,0.15)", color: "#e50914", border: "1px solid rgba(229,9,20,0.25)" }}
+              >
+                <Server size={10} />
+                {serverName}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

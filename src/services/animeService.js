@@ -442,3 +442,68 @@ export const getStreamingUrl = async (episodeId) => {
     return null;
   }
 };
+
+/**
+ * Ambil stream video per episode
+ * 1. Coba stream HLS direct via Consumet API
+ * 2. Fallback ke VidLink embed jika Consumet offline/belum di-deploy
+ */
+export const getEpisodeStream = async (animeId, episodeNumber = 1, animeTitle = "") => {
+  // Coba ambil dari Consumet API jika aktif
+  try {
+    // 1. Coba AniList provider di Consumet
+    const anilistInfoRes = await consumetApi.get(`/anime/anilist/info/${animeId}`);
+    const eps = anilistInfoRes.data?.episodes || [];
+    const targetEp = eps.find((e) => Number(e.number) === Number(episodeNumber)) || eps[Number(episodeNumber) - 1];
+
+    if (targetEp?.id) {
+      const watchRes = await consumetApi.get(`/anime/anilist/watch/${encodeURIComponent(targetEp.id)}`);
+      const sources = watchRes.data?.sources || [];
+      const bestSource = sources.find((s) => s.quality === "default" || s.quality === "1080p" || s.isM3U8) || sources[0];
+
+      if (bestSource?.url) {
+        return {
+          streamUrl: bestSource.url,
+          streamType: "hls",
+          subtitles: watchRes.data?.subtitles || [],
+          server: "Consumet (AniList HLS)",
+        };
+      }
+    }
+  } catch (err) {
+    // Coba fallback Gogoanime provider di Consumet jika judul tersedia
+    try {
+      if (animeTitle) {
+        const searchRes = await consumetApi.get(`/anime/gogoanime/${encodeURIComponent(animeTitle)}`);
+        const firstResult = searchRes.data?.results?.[0];
+        if (firstResult?.id) {
+          const gogoInfo = await consumetApi.get(`/anime/gogoanime/info/${firstResult.id}`);
+          const gogoEps = gogoInfo.data?.episodes || [];
+          const targetGogoEp = gogoEps.find((e) => Number(e.number) === Number(episodeNumber)) || gogoEps[Number(episodeNumber) - 1];
+          if (targetGogoEp?.id) {
+            const watchRes = await consumetApi.get(`/anime/gogoanime/watch/${encodeURIComponent(targetGogoEp.id)}`);
+            const sources = watchRes.data?.sources || [];
+            const bestSource = sources.find((s) => s.isM3U8) || sources[0];
+            if (bestSource?.url) {
+              return {
+                streamUrl: bestSource.url,
+                streamType: "hls",
+                subtitles: watchRes.data?.subtitles || [],
+                server: "Consumet (Gogoanime HLS)",
+              };
+            }
+          }
+        }
+      }
+    } catch (gogoErr) {
+      // Consumet belum aktif / tidak merespons
+    }
+  }
+
+  // Fallback cerdas ke VidLink Embed
+  return {
+    streamUrl: `https://vidlink.pro/anime/${animeId}/${episodeNumber}/sub?primaryColor=e50914&icons=vid&autoplay=true`,
+    streamType: "embed",
+    server: "VidLink Embed",
+  };
+};

@@ -113,8 +113,60 @@ export default function VideoPlayer({
     setProgress(dur > 0 ? (curr / dur) * 100 : 0);
   };
 
-  // ===== YOUTUBE PLAYER =====
-  if (streamType === "youtube" && streamUrl) {
+  // Setup HLS jika streamType hls atau URL adalah m3u8
+  useState(() => {
+    // initial state
+  });
+
+  // Effect untuk mengaitkan HLS stream ke videoRef
+  useEffect(() => {
+    if (!videoRef.current || !streamUrl) return;
+
+    let hls = null;
+    const isHlsStream = streamType === "hls" || streamUrl.includes(".m3u8");
+
+    if (isHlsStream) {
+      import("hls.js").then(({ default: Hls }) => {
+        if (!videoRef.current) return;
+        if (Hls.isSupported()) {
+          hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
+          hls.loadSource(streamUrl);
+          hls.attachMedia(videoRef.current);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            setIsBuffering(false);
+          });
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) {
+              console.warn("HLS stream warning:", data.type);
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  hls.destroy();
+                  break;
+              }
+            }
+          });
+        } else if (videoRef.current.canPlayType("application/vnd.apple.mpegurl")) {
+          videoRef.current.src = streamUrl;
+        }
+      });
+    }
+
+    return () => {
+      if (hls) hls.destroy();
+    };
+  }, [streamUrl, streamType]);
+
+  // ===== IFRAME EMBED / YOUTUBE PLAYER =====
+  if ((streamType === "youtube" || streamType === "embed") && streamUrl) {
     return (
       <div
         className="relative w-full bg-black"
@@ -135,7 +187,7 @@ export default function VideoPlayer({
             <div className="relative z-10 flex flex-col items-center gap-3">
               <Loader size={36} className="animate-spin" style={{ color: "#e50914" }} />
               <p className="text-sm font-medium" style={{ color: "#ffdad5" }}>
-                Loading player...
+                Memuat player episode...
               </p>
             </div>
           </div>
@@ -154,8 +206,8 @@ export default function VideoPlayer({
     );
   }
 
-  // ===== MP4 PLAYER dengan custom controls =====
-  if (streamType === "mp4" && streamUrl) {
+  // ===== HLS / MP4 PLAYER dengan custom controls =====
+  if ((streamType === "hls" || streamType === "mp4") && streamUrl) {
     return (
       <div
         ref={containerRef}
@@ -178,7 +230,7 @@ export default function VideoPlayer({
           onEnded={() => setIsPlaying(false)}
           onError={() => setIsBuffering(false)}
         >
-          <source src={streamUrl} type="video/mp4" />
+          {streamType === "mp4" && <source src={streamUrl} type="video/mp4" />}
         </video>
 
         {/* Buffering spinner */}
