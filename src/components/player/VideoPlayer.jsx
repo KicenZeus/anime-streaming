@@ -26,12 +26,7 @@ export default function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
   const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    setIframeLoaded(false);
-  }, [streamUrl]);
 
   const resetControlsTimer = () => {
     setShowControls(true);
@@ -173,39 +168,28 @@ export default function VideoPlayer({
   if ((streamType === "youtube" || streamType === "embed") && streamUrl) {
     return (
       <div
-        className="relative w-full bg-black"
+        className="relative w-full bg-black overflow-hidden"
         style={{ aspectRatio: "16/9", maxHeight: "75vh" }}
       >
-        {/* Loading state sebelum iframe load */}
-        {!iframeLoaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
-            style={{ background: "#0a0a0b" }}>
-            {posterUrl && (
-              <img
-                src={posterUrl}
-                alt={animeTitle}
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ filter: "blur(8px) brightness(0.3)" }}
-              />
-            )}
-            <div className="relative z-10 flex flex-col items-center gap-3">
-              <Loader size={36} className="animate-spin" style={{ color: "#e50914" }} />
-              <p className="text-sm font-medium" style={{ color: "#ffdad5" }}>
-                Memuat player episode...
-              </p>
-            </div>
-          </div>
+        {/* Poster background selagi player menginisialisasi */}
+        {posterUrl && (
+          <img
+            src={posterUrl}
+            alt={animeTitle}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            style={{ filter: "blur(10px) brightness(0.2)", zIndex: 0 }}
+          />
         )}
 
         <iframe
+          key={streamUrl}
           src={streamUrl}
           title={animeTitle + " - Episode " + episodeNumber}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
           allowFullScreen
-          referrerPolicy="origin"
-          className="w-full h-full"
-          style={{ border: "none" }}
-          onLoad={() => setIframeLoaded(true)}
+          referrerPolicy="no-referrer-when-downgrade"
+          className="relative w-full h-full"
+          style={{ border: "none", zIndex: 1, backgroundColor: "transparent" }}
         />
       </div>
     );
