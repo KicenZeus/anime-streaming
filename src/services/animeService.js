@@ -590,18 +590,22 @@ export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle 
       const bestSource = sources.find((s) => s.quality === "default" || s.quality === "1080p" || s.isM3U8) || sources[0];
 
       if (bestSource?.url) {
+        const isHls = Boolean(bestSource.isM3U8 || bestSource.url?.includes(".m3u8"));
+        const sType = isHls ? "hls" : "embed";
+        const sName = isHls ? "Server Consumet (HLS Direct)" : "Server Consumet (Embed)";
+
         return {
           streamUrl: bestSource.url,
-          streamType: "hls",
+          streamType: sType,
           subtitles: watchRes.data?.subtitles || [],
-          server: "Consumet (AniList HLS)",
+          server: sName,
           serverId: "consumet",
           availableServers: [
             {
               id: "consumet",
-              name: "Server Consumet (HLS Direct)",
+              name: sName,
               streamUrl: bestSource.url,
-              streamType: "hls",
+              streamType: sType,
             },
             ...availableServers,
           ],
