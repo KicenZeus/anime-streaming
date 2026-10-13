@@ -12,6 +12,7 @@ const ANILIST_URL = "https://graphql.anilist.co";
 
 const MEDIA_FIELDS = `
   id
+  idMal
   title {
     romaji
     english
@@ -107,9 +108,12 @@ function mapAniListToApp(media) {
 
   const year = media.seasonYear || media.startDate?.year || "N/A";
 
+  const malId = media.idMal || media.id;
+
   return {
-    mal_id: media.id,
+    mal_id: malId,
     id: media.id,
+    idMal: media.idMal,
     title: romajiTitle,
     title_english: englishTitle,
     title_japanese: media.title?.native || romajiTitle,
@@ -143,7 +147,14 @@ function mapAniListToApp(media) {
       string: year !== "N/A" ? String(year) : "N/A",
     },
     duration: media.duration ? `${media.duration} min` : "24 min",
-    genres: (media.genres || []).map((name) => ({ name })),
+    genres: (media.genres || []).map((name) => {
+      const match = POPULAR_GENRES.find((pg) => pg.name.toLowerCase() === name.toLowerCase());
+      return {
+        name,
+        mal_id: match ? match.id : name.toLowerCase(),
+        id: match ? match.id : name.toLowerCase(),
+      };
+    }),
     studios: (media.studios?.nodes || []).map((s) => ({ name: s.name })),
     trailer: media.trailer?.site === "youtube" ? {
       youtube_id: media.trailer.id,
@@ -448,11 +459,22 @@ export const getStreamingUrl = async (episodeId) => {
  * 1. Coba stream HLS direct via Consumet API
  * 2. Fallback ke VidLink embed jika Consumet offline/belum di-deploy
  */
-export const getEpisodeStream = async (animeId, episodeNumber = 1, animeTitle = "") => {
+export const getEpisodeStream = async (animeOrId, episodeNumber = 1, animeTitle = "") => {
+  let malId = animeOrId;
+  let anilistId = animeOrId;
+
+  if (typeof animeOrId === "object" && animeOrId !== null) {
+    malId = animeOrId.idMal || animeOrId.mal_id || animeOrId.id;
+    anilistId = animeOrId.id || malId;
+    if (!animeTitle) {
+      animeTitle = animeOrId.title_english || animeOrId.title || "";
+    }
+  }
+
   // Coba ambil dari Consumet API jika aktif
   try {
     // 1. Coba AniList provider di Consumet
-    const anilistInfoRes = await consumetApi.get(`/anime/anilist/info/${animeId}`);
+    const anilistInfoRes = await consumetApi.get(`/anime/anilist/info/${anilistId}`);
     const eps = anilistInfoRes.data?.episodes || [];
     const targetEp = eps.find((e) => Number(e.number) === Number(episodeNumber)) || eps[Number(episodeNumber) - 1];
 
@@ -500,10 +522,10 @@ export const getEpisodeStream = async (animeId, episodeNumber = 1, animeTitle = 
     }
   }
 
-  // Fallback cerdas ke VidLink Embed
+  // Fallback cerdas ke VidLink Embed (menggunakan MAL ID resmi + fallback=true)
   return {
-    streamUrl: `https://vidlink.pro/anime/${animeId}/${episodeNumber}/sub?primaryColor=e50914&icons=vid&autoplay=true`,
+    streamUrl: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=e50914&icons=vid&autoplay=true`,
     streamType: "embed",
-    server: "VidLink Embed",
+    server: "VidLink (Sub/Dub)",
   };
 };

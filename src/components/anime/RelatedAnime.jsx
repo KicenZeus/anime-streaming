@@ -15,7 +15,7 @@ export default function RelatedAnime({ relations }) {
 
   // Filter hanya yang tipe "anime" (bukan manga dll)
   const animeRelations = relations.filter((rel) =>
-    rel.entry.some((e) => e.type === "anime")
+    Array.isArray(rel?.entry) && rel.entry.some((e) => e.type === "anime")
   );
 
   return (

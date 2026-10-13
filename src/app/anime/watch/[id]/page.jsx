@@ -52,7 +52,7 @@ function WatchContent() {
       try {
         setStreamLoading(true);
         const streamInfo = await getEpisodeStream(
-          anime.id || id,
+          anime,
           selectedEp,
           anime.title_english || anime.title
         );
